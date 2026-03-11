@@ -6,7 +6,7 @@ import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 
 const HERO_SKYLINE_SRC =
-  process.env.NEXT_PUBLIC_HERO_SKYLINE_URL || "/images/hero-skyline.png";
+  process.env.NEXT_PUBLIC_HERO_SKYLINE_URL || "/images/hyderabad-hero.png";
 
 const HeroSection = () => {
   return (
@@ -15,7 +15,7 @@ const HeroSection = () => {
       <div className="absolute inset-0">
         <Image
           src={HERO_SKYLINE_SRC}
-          alt="Modern Indian city skyline"
+          alt="Hyderabad city skyline at night"
           fill
           className="object-cover"
           sizes="100vw"
