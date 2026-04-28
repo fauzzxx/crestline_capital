@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { addProjectMedia, removeProjectMedia, uploadProjectMediaFile } from "@/app/actions/admin";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ interface MediaManagerProps {
 }
 
 export function MediaManager({ projectId, media, ...rest }: MediaManagerProps) {
+  const router = useRouter();
   const [type, setType] = useState<"image" | "video" | "youtube">("image");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -48,7 +50,7 @@ export function MediaManager({ projectId, media, ...rest }: MediaManagerProps) {
       toast.success("Media added");
       setUrl("");
       setFile(null);
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error(result.error);
     }
@@ -58,7 +60,7 @@ export function MediaManager({ projectId, media, ...rest }: MediaManagerProps) {
     const result = await removeProjectMedia(mediaId);
     if (result.success) {
       toast.success("Media removed");
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error(result.error);
     }

@@ -14,9 +14,6 @@ export async function sendAdminMembershipNotification(data: {
   buying_timeline: string | null;
 }): Promise<{ success: boolean; error?: string }> {
   if (!resend) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[Email] Would send admin membership notification:", data);
-    }
     return { success: true };
   }
   try {
@@ -43,9 +40,6 @@ export async function sendAdminMembershipNotification(data: {
 
 export async function sendMembershipApproved(toEmail: string): Promise<{ success: boolean; error?: string }> {
   if (!resend) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[Email] Would send membership approved to:", toEmail);
-    }
     return { success: true };
   }
   try {

@@ -63,7 +63,7 @@ export function MembersTable({ requests, profiles, searchParams = {} }: MembersT
     const result = await approveMembershipRequest(requestId);
     if (result.success) {
       toast.success("Request approved");
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error("error" in result ? String(result.error) : "Failed to approve");
     }
@@ -73,7 +73,7 @@ export function MembersTable({ requests, profiles, searchParams = {} }: MembersT
     const result = await rejectMembershipRequest(requestId);
     if (result.success) {
       toast.success("Request rejected");
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error("error" in result ? String(result.error) : "Failed to reject");
     }
@@ -86,7 +86,7 @@ export function MembersTable({ requests, profiles, searchParams = {} }: MembersT
       toast.success("Note added");
       setNoteUserId(null);
       setNoteText("");
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error(result.error);
     }

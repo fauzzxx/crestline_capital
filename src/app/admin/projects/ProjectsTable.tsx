@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { deleteProject } from "@/app/actions/admin";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -20,12 +21,13 @@ interface ProjectsTableProps {
 }
 
 export function ProjectsTable({ projects }: ProjectsTableProps) {
+  const router = useRouter();
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete project "${name}"? This will remove all pool members and media.`)) return;
     const result = await deleteProject(id);
     if (result.success) {
       toast.success("Project deleted");
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error(result.error);
     }

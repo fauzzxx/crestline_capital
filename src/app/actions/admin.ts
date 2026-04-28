@@ -149,6 +149,7 @@ export async function createProject(data: {
   minimum_members_required: number;
   deal_deadline: string | null;
   description: string | null;
+  additional_info?: string | null;
   status: 'open' | 'unlocked' | 'closed' | 'coming_soon';
 }) {
   const { supabase } = await requireAdmin();
@@ -182,6 +183,7 @@ export async function updateProject(
     minimum_members_required: number;
     deal_deadline: string | null;
     description: string | null;
+    additional_info: string | null;
     status: 'open' | 'unlocked' | 'closed' | 'coming_soon';
   }>
 ) {

@@ -15,7 +15,7 @@ const Footer = () => {
               </span>
             </div>
             <p className="text-sm text-cream-muted leading-relaxed max-w-md">
-              India's premier membership-based structured bulk residential buying platform.
+              India&apos;s premier membership-based structured bulk residential buying platform.
               Pooling serious buyers to unlock builder-level pricing.
             </p>
           </div>

@@ -38,6 +38,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
       ? new Date(project.deal_deadline).toISOString().slice(0, 16)
       : "",
     description: project?.description ?? "",
+    additional_info: project?.additional_info ?? "",
     status: (project?.status ?? "open") as ProjectStatus,
   });
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -108,6 +109,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
       minimum_members_required: parseInt(form.minimum_members_required, 10) || 1,
       deal_deadline,
       description: form.description.trim() || null,
+      additional_info: form.additional_info.trim() || null,
       status: form.status,
       discount_tiers: tiers,
       unit_configs: unitConfigs,
@@ -189,6 +191,9 @@ export function ProjectForm({ project }: ProjectFormProps) {
               className={inputClass}
               placeholder="https://goo.gl/maps/..."
             />
+            <p className="text-xs text-cream-muted mt-1">
+              Paste any Google Maps link (goo.gl, maps.app.goo.gl, full URL) or full embed iframe HTML. Leave blank to use the location text above.
+            </p>
           </div>
           <div>
             <label className="text-xs text-cream-muted block mb-1">Builder Logo URL</label>
@@ -243,6 +248,21 @@ export function ProjectForm({ project }: ProjectFormProps) {
               placeholder="YouTube embed or direct video URL"
             />
           </div>
+          <div>
+            <label className="text-xs text-cream-muted uppercase tracking-wider mb-2 block">
+              Additional Information
+            </label>
+            <textarea
+              value={form.additional_info}
+              onChange={(e) => setForm({ ...form, additional_info: e.target.value })}
+              placeholder="Any extra details — amenities, RERA number, payment terms, possession date, etc. Free text."
+              rows={4}
+              className={`${inputClass} resize-y`}
+            />
+            <p className="text-xs text-cream-muted mt-1">
+              Shown on the project page just below the brochure. Optional.
+            </p>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -252,6 +272,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
               <label className="text-xs text-cream-muted block mb-1">Base Price (₹)</label>
               <Input
                 type="number"
+                min="0"
                 required
                 value={form.base_price}
                 onChange={(e) => setForm({ ...form, base_price: e.target.value })}
@@ -262,6 +283,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
               <label className="text-xs text-cream-muted block mb-1">Min Members</label>
               <Input
                 type="number"
+                min="0"
                 value={form.minimum_members_required}
                 onChange={(e) => setForm({ ...form, minimum_members_required: e.target.value })}
                 className={inputClass}
@@ -273,6 +295,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
               <label className="text-xs text-cream-muted block mb-1">Default Discount %</label>
               <Input
                 type="number"
+                min="0"
                 value={form.discount_percentage}
                 onChange={(e) => setForm({ ...form, discount_percentage: e.target.value })}
                 className={inputClass}
@@ -282,6 +305,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
               <label className="text-xs text-cream-muted block mb-1">Commission %</label>
               <Input
                 type="number"
+                min="0"
                 value={form.commission_percentage}
                 onChange={(e) => setForm({ ...form, commission_percentage: e.target.value })}
                 className={inputClass}
@@ -327,6 +351,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
                 <label className="text-[10px] text-cream-muted uppercase mb-1 block">Min Units</label>
                 <Input
                   type="number"
+                  min="0"
                   value={Number.isFinite(tier.min_units) ? tier.min_units : ""}
                   onChange={(e) => {
                     const v = e.target.value;
@@ -339,6 +364,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
                 <label className="text-[10px] text-cream-muted uppercase mb-1 block">Discount %</label>
                 <Input
                   type="number"
+                  min="0"
                   value={Number.isFinite(tier.discount_percentage) ? tier.discount_percentage : ""}
                   onChange={(e) => {
                     const v = e.target.value;

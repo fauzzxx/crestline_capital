@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { MapPin, Building2, Users, Timer, ChevronRight, CheckCircle2, Map, FileDown, PlayCircle } from "lucide-react";
+import { MapPin, Building2, Users, Timer, ChevronRight, CheckCircle2, Map, FileDown, PlayCircle, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/dashboard/ProgressBar";
@@ -11,6 +12,8 @@ import { MediaGallery } from "@/components/projects/MediaGallery";
 import { joinPool } from "@/app/actions/pool";
 import { toast } from "sonner";
 import type { Project, ProjectMedia, DiscountTier, UnitConfig } from "@/types/database";
+import { getYouTubeEmbedUrl } from "@/lib/youtube";
+import { getMapEmbedUrl } from "@/lib/maps";
 
 interface ProjectDetailClientProps {
   project: Project;
@@ -19,6 +22,7 @@ interface ProjectDetailClientProps {
 }
 
 export function ProjectDetailClient({ project, media, isMember }: ProjectDetailClientProps) {
+  const router = useRouter();
   const [joining, setJoining] = useState(false);
   const isComingSoon = project.status === "coming_soon";
   const unlocked = project.status === "unlocked";
@@ -37,7 +41,7 @@ export function ProjectDetailClient({ project, media, isMember }: ProjectDetailC
     setJoining(false);
     if (result.success) {
       toast.success(isComingSoon ? "Your interest has been recorded." : "You've joined this capital pool.");
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error(result.error || "Could not complete request");
     }
@@ -112,27 +116,23 @@ export function ProjectDetailClient({ project, media, isMember }: ProjectDetailC
                 <PlayCircle className="w-5 h-5 text-gold" /> Project Video
               </h2>
               <div className="aspect-video rounded-xl overflow-hidden bg-surface-elevated">
-                {project.project_video.includes("youtube") || project.project_video.includes("youtu.be") ? (
-                  (() => {
-                    const url = project.project_video;
-                    const embed = url.includes("/embed/") ? url : (() => {
-                      const m = url.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})(?:&|$)/);
-                      return m ? `https://www.youtube.com/embed/${m[1]}` : url;
-                    })();
+                {(() => {
+                  const embed = getYouTubeEmbedUrl(project.project_video!);
+                  if (embed) {
                     return (
                       <iframe
                         title="Project video"
                         width="100%"
                         height="100%"
                         src={embed}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                         allowFullScreen
-                        className="w-full h-full"
+                        className="w-full h-full border-0"
                       />
                     );
-                  })()
-                ) : (
-                  <video src={project.project_video} controls className="w-full h-full" />
-                )}
+                  }
+                  return <video src={project.project_video!} controls className="w-full h-full" />;
+                })()}
               </div>
             </section>
           )}
@@ -154,6 +154,18 @@ export function ProjectDetailClient({ project, media, isMember }: ProjectDetailC
             </section>
           )}
 
+          {/* Additional Information */}
+          {project.additional_info && (
+            <section className="glass-card p-6 rounded-2xl">
+              <h2 className="text-lg font-heading font-semibold mb-4 flex items-center gap-2">
+                <Info className="w-5 h-5 text-gold" /> Additional Information
+              </h2>
+              <p className="text-cream-muted leading-relaxed whitespace-pre-wrap">
+                {project.additional_info}
+              </p>
+            </section>
+          )}
+
           {/* Unit Configurations */}
           {project.unit_configs && project.unit_configs.length > 0 && (
             <section className="glass-card p-6 rounded-2xl">
@@ -169,7 +181,7 @@ export function ProjectDetailClient({ project, media, isMember }: ProjectDetailC
                   </thead>
                   <tbody className="divide-y divide-border/50">
                     {project.unit_configs.map((config, i) => (
-                      <tr key={i} className="text-sm">
+                      <tr key={`${config.type}-${config.size}-${i}`} className="text-sm">
                         <td className="py-4 px-2 font-medium">{config.type}</td>
                         <td className="py-4 px-2 text-cream-muted">{config.size}</td>
                         <td className="py-4 px-2 text-right font-semibold text-gold">{config.price}</td>
@@ -200,32 +212,25 @@ export function ProjectDetailClient({ project, media, isMember }: ProjectDetailC
               <MapPin className="w-4 h-4 text-gold/60" />
               <span>{project.location}</span>
             </div>
-            {project.google_map_url ? (
-              <div className="aspect-video rounded-xl overflow-hidden bg-surface-elevated">
-                <iframe
-                  title="Location map"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg) brightness(95%) contrast(90%)' }}
-                  loading="lazy"
-                  allowFullScreen
-                  src={project.google_map_url.includes('iframe')
-                    ? project.google_map_url.match(/src="([^"]+)"/)?.[1]
-                    : `https://www.google.com/maps/embed?pb=${project.google_map_url}`}
-                />
-              </div>
-            ) : (
-              <div className="aspect-video rounded-xl bg-surface-elevated border border-border flex items-center justify-center text-cream-muted text-sm">
-                Map for {project.location} — can be added by admin
-              </div>
-            )}
+            <div className="aspect-video rounded-xl overflow-hidden bg-surface-elevated">
+              <iframe
+                title="Location map"
+                width="100%"
+                height="100%"
+                style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg) brightness(95%) contrast(90%)' }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+                src={getMapEmbedUrl(project.google_map_url ?? '', project.location)}
+              />
+            </div>
           </section>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Pricing Card */}
-          <section className="glass-card p-6 rounded-2xl border-gold/20 shadow-xl shadow-gold/5 sticky top-24">
+          <section className="glass-card p-6 rounded-2xl border-gold/20 shadow-xl shadow-gold/5 lg:sticky lg:top-24">
             <h2 className="text-gold font-semibold text-sm uppercase mb-6 tracking-widest">Active Opportunity</h2>
 
             <div className="space-y-8">
@@ -245,7 +250,7 @@ export function ProjectDetailClient({ project, media, isMember }: ProjectDetailC
                     .map((tier, i) => {
                       const isReached = project.current_members_joined >= tier.min_units;
                       return (
-                        <div key={i} className={`flex items-center justify-between p-3 rounded-lg border ${isReached ? 'bg-gold/10 border-gold/30 text-gold' : 'bg-surface-elevated/50 border-border opacity-60'}`}>
+                        <div key={`tier-${tier.min_units}-${tier.discount_percentage}-${i}`} className={`flex items-center justify-between p-3 rounded-lg border ${isReached ? 'bg-gold/10 border-gold/30 text-gold' : 'bg-surface-elevated/50 border-border opacity-60'}`}>
                           <div className="flex items-center gap-3">
                             {isReached ? <CheckCircle2 className="w-4 h-4" /> : <div className="w-4 h-4 rounded-full border border-current" />}
                             <span className="text-sm font-medium">Pool: {tier.min_units}+ Units</span>

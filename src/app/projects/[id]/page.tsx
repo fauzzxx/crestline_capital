@@ -1,8 +1,36 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ProjectDetailClient } from "./ProjectDetailClient";
 import { trackEvent } from "@/lib/analytics";
+import type { Project } from "@/types/database";
+
+async function getProject(id: string): Promise<Project | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("projects").select("*").eq("id", id).single();
+  if (error || !data) return null;
+  return data as Project;
+}
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Metadata> {
+  const { id } = await params;
+  const project = await getProject(id);
+  if (!project) return { title: "Project | Crestline Capital" };
+  const description =
+    project.description?.slice(0, 160) || `Investment opportunity in ${project.location}.`;
+  return {
+    title: `${project.project_name} | Crestline Capital`,
+    description,
+    openGraph: {
+      title: project.project_name,
+      description,
+      images: project.thumbnail_url ? [project.thumbnail_url] : [],
+    },
+  };
+}
 
 export default async function ProjectDetailPage({
   params,
@@ -12,13 +40,8 @@ export default async function ProjectDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: project, error } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error || !project) notFound();
+  const project = await getProject(id);
+  if (!project) notFound();
 
   const { data: media } = await supabase
     .from("project_media")
@@ -48,7 +71,7 @@ export default async function ProjectDetailPage({
         </Link>
       </div>
       <ProjectDetailClient
-        project={project as import("@/types/database").Project}
+        project={project}
         media={(media ?? []) as import("@/types/database").ProjectMedia[]}
         isMember={isMember}
       />

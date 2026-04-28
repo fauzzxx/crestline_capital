@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { removePoolMember, updatePoolMemberStatus } from "@/app/actions/admin";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -34,12 +35,13 @@ interface PoolsTableProps {
 }
 
 export function PoolsTable({ poolMembers, profileMap }: PoolsTableProps) {
+  const router = useRouter();
   const handleRemove = async (id: string) => {
     if (!confirm("Remove this member from the pool?")) return;
     const result = await removePoolMember(id);
     if (result.success) {
       toast.success("Member removed");
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error(result.error);
     }
@@ -49,7 +51,7 @@ export function PoolsTable({ poolMembers, profileMap }: PoolsTableProps) {
     const result = await updatePoolMemberStatus(id, status);
     if (result.success) {
       toast.success("Status updated");
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error(result.error);
     }

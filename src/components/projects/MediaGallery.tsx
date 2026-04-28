@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ProjectMedia } from "@/types/database";
+import { getYouTubeEmbedUrl } from "@/lib/youtube";
 
 interface MediaGalleryProps {
   items: ProjectMedia[];
@@ -22,7 +23,7 @@ export function MediaGallery({ items }: MediaGalleryProps) {
       <div className="relative aspect-video bg-black/40">
         {current.media_type === "youtube" ? (
           <iframe
-            src={current.media_url.replace("watch?v=", "embed/")}
+            src={getYouTubeEmbedUrl(current.media_url) ?? current.media_url}
             title="YouTube"
             className="absolute inset-0 w-full h-full"
             allowFullScreen

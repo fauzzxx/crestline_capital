@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { deleteContactMessage } from "@/app/actions/admin";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export function ContactMessagesClient({
   totalPages,
   total,
 }: ContactMessagesClientProps) {
+  const router = useRouter();
   const [viewing, setViewing] = useState<ContactMessage | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -52,7 +54,7 @@ export function ContactMessagesClient({
     setDeleting(null);
     if (result.success) {
       toast.success("Message deleted");
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error(result.error);
     }

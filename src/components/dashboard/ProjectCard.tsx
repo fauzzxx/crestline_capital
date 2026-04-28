@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { MapPin, Building2, Users, Timer } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, isMember = false, isUnlocked }: ProjectCardProps) {
+  const router = useRouter();
   const [joining, setJoining] = useState(false);
   const unlocked = isUnlocked ?? project.status === "unlocked";
   const thumbnailUrl = project.thumbnail_url?.trim() || null;
@@ -35,7 +37,7 @@ export function ProjectCard({ project, isMember = false, isUnlocked }: ProjectCa
     setJoining(false);
     if (result.success) {
       toast.success("You've joined this capital pool.");
-      window.location.reload();
+      router.refresh();
     } else {
       toast.error(result.error || "Could not join pool");
     }

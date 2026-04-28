@@ -71,6 +71,7 @@ export interface Project {
   current_members_joined: number;
   deal_deadline: string | null;
   description: string | null;
+  additional_info?: string | null;
   status: ProjectStatus;
   created_at: string;
   updated_at?: string;
