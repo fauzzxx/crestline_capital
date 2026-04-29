@@ -4,11 +4,17 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { submitMembershipRequest } from "@/app/actions/membership";
+import {
+  BUDGET_RANGES,
+  BUYING_PURPOSES,
+  BUYING_TIMELINES,
+  HYDERABAD_LOCATIONS,
+} from "@/lib/constants";
 
-const budgetRanges = ["₹50L - ₹1Cr", "₹1Cr - ₹2Cr", "₹2Cr - ₹3Cr", "₹3Cr+"];
-const purposes = ["Investment", "End Use", "Both"];
-const timelines = ["Immediate", "1-3 Months", "3-6 Months", "6+ Months"];
-const locations = ["Gachibowli", "Kokapet", "Narsingi", "Financial District", "Tellapur", "Kollur", "Other"];
+const budgetRanges = BUDGET_RANGES;
+const purposes = BUYING_PURPOSES;
+const timelines = BUYING_TIMELINES;
+const locations = HYDERABAD_LOCATIONS;
 
 export function MembershipForm() {
   const [form, setForm] = useState({

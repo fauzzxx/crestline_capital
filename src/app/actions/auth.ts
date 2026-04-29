@@ -3,11 +3,17 @@
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
-// Test phones bypass SMS: sendPhoneOtp is a no-op, and verifyPhoneOtp accepts the fixed OTP below.
-const TEST_OTPS: Record<string, string> = {
-  '+917780764158': '123456',
-  '+918121888884': '123456',
-};
+// Test phones bypass SMS: sendPhoneOtp is a no-op, and verifyPhoneOtp accepts the fixed OTP.
+// Gated behind env vars so production never has hardcoded test numbers in source.
+const TEST_OTPS: Record<string, string> =
+  process.env.NEXT_PUBLIC_ENABLE_TEST_OTPS === 'true' && process.env.TEST_OTP_PHONES
+    ? Object.fromEntries(
+        process.env.TEST_OTP_PHONES.split(',').map((p) => [
+          p.trim(),
+          process.env.TEST_OTP_CODE || '123456',
+        ]),
+      )
+    : {};
 
 function normalizePhone(phone: string) {
   const digits = phone.replace(/\D/g, '');

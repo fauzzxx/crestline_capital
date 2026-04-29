@@ -126,7 +126,9 @@ export function ProjectDetailClient({ project, media, isMember }: ProjectDetailC
                         height="100%"
                         src={embed}
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                        referrerPolicy="no-referrer-when-downgrade"
                         allowFullScreen
+                        loading="lazy"
                         className="w-full h-full border-0"
                       />
                     );
