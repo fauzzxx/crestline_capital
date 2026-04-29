@@ -8,6 +8,7 @@ import {
 } from '@/lib/email';
 import { sendWhatsAppMembershipReceived } from '@/lib/notifications';
 import { trackEvent } from '@/lib/analytics';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function submitMembershipRequest(formData: {
   full_name: string;
@@ -19,6 +20,15 @@ export async function submitMembershipRequest(formData: {
   buying_timeline: string;
   agreement_accepted: boolean;
 }) {
+  const ip = await getClientIp();
+  const rl = checkRateLimit(`membership:${ip}`, { maxAttempts: 3, windowMs: 60 * 60 * 1000 });
+  if (!rl.allowed) {
+    return {
+      success: false,
+      error: `Too many submissions. Try again in ${Math.ceil(rl.retryAfterSec / 60)} min.`,
+    };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.from('membership_requests').insert({

@@ -38,10 +38,29 @@ export function MembershipForm() {
     }));
   };
 
+  const phoneError = (() => {
+    const v = form.phone.trim();
+    if (!v) return "";
+    const digits = v.replace(/\D/g, "");
+    if (v.startsWith("+91")) {
+      return digits.length === 12 ? "" : "Enter a valid 10-digit mobile after +91";
+    }
+    return digits.length === 10 ? "" : "Enter a 10-digit Indian mobile or +91XXXXXXXXXX";
+  })();
+  const emailError = (() => {
+    const v = form.email.trim();
+    if (!v) return "";
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? "" : "Enter a valid email";
+  })();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.agreed) {
       toast.error("Please agree to the membership terms.");
+      return;
+    }
+    if (phoneError || emailError) {
+      toast.error(phoneError || emailError);
       return;
     }
     setSubmitting(true);
@@ -105,7 +124,11 @@ export function MembershipForm() {
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
             className={inputClass}
             placeholder="+91 XXXXX XXXXX"
+            aria-invalid={!!phoneError}
           />
+          {phoneError && (
+            <p className="text-xs text-red-400 mt-1">{phoneError}</p>
+          )}
         </div>
         <div>
           <label className="text-sm text-cream-muted mb-1.5 block">Email</label>
@@ -116,7 +139,11 @@ export function MembershipForm() {
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             className={inputClass}
             placeholder="you@email.com"
+            aria-invalid={!!emailError}
           />
+          {emailError && (
+            <p className="text-xs text-red-400 mt-1">{emailError}</p>
+          )}
         </div>
       </div>
 

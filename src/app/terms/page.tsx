@@ -1,3 +1,4 @@
+// TODO: Lawyer review — content below is good-faith boilerplate, not legal advice.
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -23,6 +24,10 @@ export default function TermsPage() {
           <p>To the fullest extent permitted by law, Crestline Capital shall not be liable for any loss, dispute, or damage arising from your use of the platform or from any transaction between you and a builder.</p>
           <h3 className="text-foreground font-heading text-lg">6. Modifications</h3>
           <p>These terms may be updated at any time. Continued use of the platform constitutes acceptance of any modifications.</p>
+          <h3 className="text-foreground font-heading text-lg">7. Governing Law &amp; Jurisdiction</h3>
+          <p>These terms are governed by the laws of India. Any dispute arising in connection with the platform shall be subject to the exclusive jurisdiction of the courts at Hyderabad, Telangana, India.</p>
+          <h3 className="text-foreground font-heading text-lg">8. Data Protection</h3>
+          <p>Personal data collected via the platform is processed in accordance with our Privacy Policy and the Digital Personal Data Protection Act, 2023 (DPDP Act). You may exercise rights of access, correction, and erasure as set out in the Privacy Policy.</p>
         </div>
       </div>
       <Footer />

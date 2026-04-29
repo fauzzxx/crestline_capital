@@ -1,3 +1,4 @@
+// TODO: Lawyer review — membership agreement is good-faith boilerplate.
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -44,6 +45,11 @@ export default function MembershipAgreementPage() {
           <p>
             This agreement may be updated from time to time. Continued use of the platform after
             changes constitutes acceptance of the updated terms.
+          </p>
+          <h3 className="text-foreground font-heading text-lg">6. Governing Law &amp; Dispute Resolution</h3>
+          <p>
+            This agreement is governed by the laws of India. Any disputes shall be subject to the
+            exclusive jurisdiction of the courts at Hyderabad, Telangana.
           </p>
         </div>
       </div>

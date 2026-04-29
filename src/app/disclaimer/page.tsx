@@ -1,3 +1,4 @@
+// TODO: Lawyer review — disclaimer content is good-faith boilerplate.
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 

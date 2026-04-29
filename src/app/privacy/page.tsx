@@ -1,3 +1,4 @@
+// TODO: Lawyer review — content below is good-faith boilerplate aligned with DPDP Act 2023.
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -17,6 +18,10 @@ export default function PrivacyPage() {
           <p>Your information is used to evaluate membership eligibility, match you with suitable capital pools, and communicate relevant opportunities. We do not sell your data to third parties.</p>
           <h3 className="text-foreground font-heading text-lg">Data Security</h3>
           <p>We employ industry-standard security measures to protect your data. Access is restricted to authorized personnel only.</p>
+          <h3 className="text-foreground font-heading text-lg">Your Rights (DPDP Act 2023)</h3>
+          <p>You have the right to access, correct, and erase the personal data you have provided. You may also withdraw consent or lodge a complaint with the Data Protection Board of India. Requests can be made to the contact below.</p>
+          <h3 className="text-foreground font-heading text-lg">Jurisdiction</h3>
+          <p>This policy is governed by the laws of India. Any dispute is subject to the exclusive jurisdiction of the courts at Hyderabad, Telangana.</p>
           <h3 className="text-foreground font-heading text-lg">Contact</h3>
           <p>For privacy-related inquiries, contact us at info@crestlinecapital.in.</p>
         </div>
