@@ -6,7 +6,9 @@ export default async function AdminPoolsPage() {
 
   const { data: poolMembers } = await supabase
     .from("pool_members")
-    .select("id, commitment_status, joined_at, project:projects(project_name, status), user_id")
+    .select(
+      "id, commitment_status, joined_at, payment_stage, documentation_status, builder_meeting_at, member_notes, project:projects(project_name, status), user_id"
+    )
     .order("joined_at", { ascending: false });
 
   const { data: profiles } = await supabase.from("profiles").select("id, full_name, phone");
@@ -21,6 +23,10 @@ export default async function AdminPoolsPage() {
           id: string;
           commitment_status: string;
           joined_at: string;
+          payment_stage: string | null;
+          documentation_status: string | null;
+          builder_meeting_at: string | null;
+          member_notes: string | null;
           project: { project_name: string; status: string } | null;
           user_id: string;
         }>}

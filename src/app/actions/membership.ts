@@ -2,7 +2,10 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { sendAdminMembershipNotification } from '@/lib/email';
+import {
+  sendAdminMembershipNotification,
+  sendMembershipReceivedEmail,
+} from '@/lib/email';
 import { sendWhatsAppMembershipReceived } from '@/lib/notifications';
 import { trackEvent } from '@/lib/analytics';
 
@@ -45,7 +48,15 @@ export async function submitMembershipRequest(formData: {
     buying_timeline: formData.buying_timeline || null,
   });
 
-  sendWhatsAppMembershipReceived({ name: formData.full_name.trim(), phone: formData.phone.trim() }).catch(() => {});
+  sendMembershipReceivedEmail(
+    formData.email.trim().toLowerCase(),
+    formData.full_name.trim(),
+  ).catch(() => {});
+
+  sendWhatsAppMembershipReceived({
+    name: formData.full_name.trim(),
+    phone: formData.phone.trim(),
+  }).catch(() => {});
 
   revalidatePath('/membership');
   return { success: true };

@@ -11,17 +11,28 @@ import { CountdownTimer } from "@/components/dashboard/CountdownTimer";
 import { MediaGallery } from "@/components/projects/MediaGallery";
 import { joinPool } from "@/app/actions/pool";
 import { toast } from "sonner";
-import type { Project, ProjectMedia, DiscountTier, UnitConfig } from "@/types/database";
+import type { Project, ProjectMedia, DiscountTier, UnitConfig, Builder } from "@/types/database";
 import { getYouTubeEmbedUrl } from "@/lib/youtube";
 import { getMapEmbedUrl } from "@/lib/maps";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ExternalLink, ShieldCheck } from "lucide-react";
+import { JoinPoolDialog } from "@/components/projects/JoinPoolDialog";
 
 interface ProjectDetailClientProps {
   project: Project;
   media: ProjectMedia[];
   isMember: boolean;
+  builder?: Builder | null;
 }
 
-export function ProjectDetailClient({ project, media, isMember }: ProjectDetailClientProps) {
+function trustBadgeClasses(score: number | null | undefined) {
+  if (typeof score !== "number") return "bg-surface-elevated border-border text-cream-muted";
+  if (score >= 80) return "bg-green-500/15 border-green-500/40 text-green-400";
+  if (score >= 60) return "bg-gold/15 border-gold/40 text-gold";
+  return "bg-surface-elevated border-border text-cream-muted";
+}
+
+export function ProjectDetailClient({ project, media, isMember, builder }: ProjectDetailClientProps) {
   const router = useRouter();
   const [joining, setJoining] = useState(false);
   const isComingSoon = project.status === "coming_soon";
@@ -37,7 +48,7 @@ export function ProjectDetailClient({ project, media, isMember }: ProjectDetailC
 
   const handleJoin = async () => {
     setJoining(true);
-    const result = await joinPool(project.id);
+    const result = await joinPool(project.id, { agreementAccepted: true });
     setJoining(false);
     if (result.success) {
       toast.success(isComingSoon ? "Your interest has been recorded." : "You've joined this capital pool.");
@@ -85,14 +96,20 @@ export function ProjectDetailClient({ project, media, isMember }: ProjectDetailC
           </div>
         </div>
         {!isMember && project.status !== "closed" && (
-          <Button
-            onClick={handleJoin}
-            disabled={joining}
-            size="lg"
-            className="gold-gradient-bg text-accent-foreground hover:scale-105 transition-transform px-8"
-          >
-            {joining ? "Processing..." : isComingSoon ? "Express Interest" : "Join Capital Pool"}
-          </Button>
+          <JoinPoolDialog
+            isComingSoon={isComingSoon}
+            loading={joining}
+            onConfirm={handleJoin}
+            trigger={
+              <Button
+                disabled={joining}
+                size="lg"
+                className="gold-gradient-bg text-accent-foreground hover:scale-105 transition-transform px-8"
+              >
+                {joining ? "Processing..." : isComingSoon ? "Express Interest" : "Join Capital Pool"}
+              </Button>
+            }
+          />
         )}
       </div>
 
@@ -205,6 +222,84 @@ export function ProjectDetailClient({ project, media, isMember }: ProjectDetailC
             </section>
           )}
 
+          {/* About the Builder */}
+          {builder && (
+            <section className="glass-card p-6 rounded-2xl">
+              <Accordion type="single" collapsible defaultValue="builder">
+                <AccordionItem value="builder" className="border-0">
+                  <AccordionTrigger className="text-lg font-heading font-semibold py-2 hover:no-underline">
+                    <span className="flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-gold" /> About the Builder
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="pt-2 space-y-5">
+                      <div className="flex flex-wrap items-center gap-4">
+                        {project.builder_logo && (
+                          <img src={project.builder_logo} alt="" className="h-10 w-auto object-contain" />
+                        )}
+                        <div>
+                          <h3 className="font-heading font-semibold text-foreground text-lg">
+                            {builder.name}
+                          </h3>
+                          {builder.established_year && (
+                            <p className="text-xs text-cream-muted mt-1">
+                              Established {builder.established_year}
+                            </p>
+                          )}
+                        </div>
+                        {typeof builder.trust_score === "number" && (
+                          <div
+                            className={`ml-auto inline-flex items-center gap-1.5 border rounded-full px-3 py-1 text-xs font-medium ${trustBadgeClasses(builder.trust_score)}`}
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            Trust {builder.trust_score}/100
+                          </div>
+                        )}
+                      </div>
+                      {builder.bio && (
+                        <p className="text-cream-muted leading-relaxed whitespace-pre-wrap text-sm">
+                          {builder.bio}
+                        </p>
+                      )}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                        {typeof builder.past_projects_count === "number" && (
+                          <div className="bg-surface-elevated/50 p-3 rounded-lg border border-border">
+                            <p className="text-[10px] text-cream-muted uppercase mb-1">Past projects</p>
+                            <p className="font-semibold">{builder.past_projects_count}</p>
+                          </div>
+                        )}
+                        {typeof builder.total_units_delivered === "number" && (
+                          <div className="bg-surface-elevated/50 p-3 rounded-lg border border-border">
+                            <p className="text-[10px] text-cream-muted uppercase mb-1">Units delivered</p>
+                            <p className="font-semibold">{builder.total_units_delivered.toLocaleString()}</p>
+                          </div>
+                        )}
+                        {builder.website_url && (
+                          <a
+                            href={builder.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-surface-elevated/50 p-3 rounded-lg border border-border hover:border-gold/40 transition-colors flex items-center gap-2"
+                          >
+                            <ExternalLink className="w-4 h-4 text-gold" />
+                            <span className="truncate">Visit website</span>
+                          </a>
+                        )}
+                      </div>
+                      {builder.rera_numbers && (
+                        <div className="text-xs text-cream-muted">
+                          <span className="uppercase tracking-wider mr-2">RERA:</span>
+                          {builder.rera_numbers}
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </section>
+          )}
+
           {/* Location Map Section */}
           <section className="glass-card p-6 rounded-2xl">
             <h2 className="text-lg font-heading font-semibold mb-4 flex items-center gap-2">
@@ -292,9 +387,16 @@ export function ProjectDetailClient({ project, media, isMember }: ProjectDetailC
                   <p className="text-[10px] text-cream-muted mb-3 text-center">
                     By joining you agree to our Terms &amp; Confidentiality. Deal details are for member network only.
                   </p>
-                  <Button onClick={handleJoin} disabled={joining} className="w-full gold-gradient-bg text-accent-foreground py-6">
-                    {joining ? "Processing..." : isComingSoon ? "Express Interest" : "Join Capital Pool"}
-                  </Button>
+                  <JoinPoolDialog
+                    isComingSoon={isComingSoon}
+                    loading={joining}
+                    onConfirm={handleJoin}
+                    trigger={
+                      <Button disabled={joining} className="w-full gold-gradient-bg text-accent-foreground py-6">
+                        {joining ? "Processing..." : isComingSoon ? "Express Interest" : "Join Capital Pool"}
+                      </Button>
+                    }
+                  />
                 </>
               )}
             </div>

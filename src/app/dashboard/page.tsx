@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FadeIn } from "@/components/shared/FadeIn";
 import { Briefcase, Sparkles, LayoutDashboard, Calculator, Bell, CheckCircle2, Unlock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { formatLabel, formatDateTime } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -24,7 +25,9 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false }),
     supabase
       .from("pool_members")
-      .select("project_id, commitment_status, project:projects(*)")
+      .select(
+        "project_id, commitment_status, payment_stage, documentation_status, builder_meeting_at, project:projects(*)"
+      )
       .eq("user_id", user.id),
   ]);
 
@@ -179,9 +182,12 @@ export default async function DashboardPage() {
             >
               Appreciation Projection
             </Link>
-            <span className="px-5 py-2.5 rounded-lg border border-border text-cream-muted text-sm">
-              Bulk Discount Comparison (Coming soon)
-            </span>
+            <Link
+              href="/dashboard/tools#bulk-comparison"
+              className="px-5 py-2.5 rounded-lg gold-border text-gold font-medium hover:gold-glow transition-all text-sm"
+            >
+              Bulk Discount Comparison
+            </Link>
           </div>
         </FadeIn>
       </section>
@@ -226,15 +232,15 @@ export default async function DashboardPage() {
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-cream-muted uppercase">Payment Stage</span>
-                      <span className="text-cream-muted">—</span>
+                      <span className="text-foreground">{formatLabel(pm.payment_stage)}</span>
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-cream-muted uppercase">Documentation</span>
-                      <span className="text-cream-muted">—</span>
+                      <span className="text-foreground">{formatLabel(pm.documentation_status)}</span>
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-cream-muted uppercase">Builder Meeting</span>
-                      <span className="text-cream-muted">—</span>
+                      <span className="text-foreground">{formatDateTime(pm.builder_meeting_at)}</span>
                     </div>
                     <Link
                       href={`/projects/${pm.project_id}`}

@@ -80,6 +80,21 @@ export async function addAdminNote(userId: string, note: string) {
   return { success: true };
 }
 
+export async function updateMemberNotes(requestId: string, notes: string) {
+  try {
+    const { supabase } = await requireAdmin();
+    const { error } = await supabase
+      .from('membership_requests')
+      .update({ admin_notes: notes.trim() || null })
+      .eq('id', requestId);
+    if (error) return { success: false, error: error.message };
+    revalidatePath('/admin/members');
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Unauthorized' };
+  }
+}
+
 export async function deleteContactMessage(id: string): Promise<{ success: true } | { success: false; error: string }> {
   try {
     const { supabase } = await requireAdmin();
@@ -93,14 +108,22 @@ export async function deleteContactMessage(id: string): Promise<{ success: true 
 }
 
 // Builder Management
-export async function createBuilder(data: {
+type BuilderInput = {
   name: string;
-  contact_person: string | null;
-  phone: string | null;
-  email: string | null;
-  past_performance: string | null;
-  trust_score: number;
-}) {
+  contact_person?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  past_performance?: string | null;
+  trust_score?: number | null;
+  bio?: string | null;
+  established_year?: number | null;
+  website_url?: string | null;
+  past_projects_count?: number | null;
+  total_units_delivered?: number | null;
+  rera_numbers?: string | null;
+};
+
+export async function createBuilder(data: BuilderInput) {
   const { supabase } = await requireAdmin();
   const { error } = await supabase.from('builders').insert(data);
   if (error) return { success: false, error: error.message };
@@ -108,16 +131,12 @@ export async function createBuilder(data: {
   return { success: true };
 }
 
-export async function updateBuilder(id: string, data: Partial<{
-  name: string;
-  contact_person: string | null;
-  phone: string | null;
-  email: string | null;
-  past_performance: string | null;
-  trust_score: number;
-}>) {
+export async function updateBuilder(id: string, data: Partial<BuilderInput>) {
   const { supabase } = await requireAdmin();
-  const { error } = await supabase.from('builders').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id);
+  const { error } = await supabase
+    .from('builders')
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq('id', id);
   if (error) return { success: false, error: error.message };
   revalidatePath('/admin/builders');
   return { success: true };
@@ -299,5 +318,25 @@ export async function updatePoolMemberStatus(poolMemberId: string, commitment_st
   if (error) return { success: false, error: error.message };
   revalidatePath('/admin/projects');
   revalidatePath('/admin/pools');
+  return { success: true };
+}
+
+export async function updatePoolMemberProgress(
+  poolMemberId: string,
+  data: Partial<{
+    payment_stage: 'not_started' | 'token_paid' | 'partial' | 'completed';
+    documentation_status: 'not_started' | 'in_progress' | 'submitted' | 'verified';
+    builder_meeting_at: string | null;
+    member_notes: string | null;
+  }>,
+) {
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase
+    .from('pool_members')
+    .update(data)
+    .eq('id', poolMemberId);
+  if (error) return { success: false, error: error.message };
+  revalidatePath('/admin/pools');
+  revalidatePath('/dashboard');
   return { success: true };
 }

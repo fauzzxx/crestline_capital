@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ProjectDetailClient } from "./ProjectDetailClient";
 import { trackEvent } from "@/lib/analytics";
-import type { Project } from "@/types/database";
+import type { Project, Builder } from "@/types/database";
 
 async function getProject(id: string): Promise<Project | null> {
   const supabase = await createClient();
@@ -49,6 +49,16 @@ export default async function ProjectDetailPage({
     .eq("project_id", id)
     .order("created_at");
 
+  let builder: Builder | null = null;
+  if (project.builder_id) {
+    const { data: b } = await supabase
+      .from("builders")
+      .select("*")
+      .eq("id", project.builder_id)
+      .single();
+    builder = (b as Builder) ?? null;
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
   trackEvent(user?.id ?? null, "project_viewed", { project_id: id }).catch(() => {});
 
@@ -74,6 +84,7 @@ export default async function ProjectDetailPage({
         project={project}
         media={(media ?? []) as import("@/types/database").ProjectMedia[]}
         isMember={isMember}
+        builder={builder}
       />
     </div>
   );

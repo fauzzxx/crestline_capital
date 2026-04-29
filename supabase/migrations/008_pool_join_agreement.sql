@@ -1,0 +1,3 @@
+ALTER TABLE pool_members ADD COLUMN IF NOT EXISTS agreement_accepted BOOLEAN DEFAULT FALSE;
+ALTER TABLE pool_members ADD COLUMN IF NOT EXISTS agreement_accepted_at TIMESTAMPTZ;
+ALTER TABLE pool_members ADD COLUMN IF NOT EXISTS agreement_ip TEXT;

@@ -1,79 +1,94 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { BuildersTable } from "./BuildersTable";
+import { BuilderForm } from "./BuilderForm";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import type { Builder } from "@/types/database";
 
 export default async function AdminBuildersPage() {
   const supabase = await createClient();
-  const { data: projects } = await supabase
-    .from("projects")
-    .select("id, project_name, builder_name, location, status, discount_percentage, current_members_joined, minimum_members_required");
 
-  // Aggregate by builder_name
-  const builderMap = new Map<string, { name: string; projects: typeof projects }>();
-  (projects ?? []).forEach((p) => {
-    const name = p.builder_name || "Unknown";
-    if (!builderMap.has(name)) builderMap.set(name, { name, projects: [] });
-    builderMap.get(name)!.projects!.push(p);
+  const [buildersRes, projectsRes] = await Promise.all([
+    supabase.from("builders").select("*").order("name"),
+    supabase
+      .from("projects")
+      .select(
+        "id, project_name, builder_name, builder_id, location, status, discount_percentage, current_members_joined, minimum_members_required",
+      ),
+  ]);
+
+  const builders = (buildersRes.data ?? []) as Builder[];
+  const allProjects = projectsRes.data ?? [];
+
+  const fillRateByBuilder = new Map<string, number>();
+  const projectsByBuilder = new Map<string, typeof allProjects>();
+  allProjects.forEach((p) => {
+    const key = p.builder_id ?? "";
+    if (!key) return;
+    if (!projectsByBuilder.has(key)) projectsByBuilder.set(key, []);
+    projectsByBuilder.get(key)!.push(p);
   });
-  const builders = Array.from(builderMap.values());
+  projectsByBuilder.forEach((projs, builderId) => {
+    if (projs.length === 0) return;
+    const avg =
+      projs.reduce(
+        (acc, p) =>
+          acc +
+          (p.minimum_members_required > 0
+            ? (p.current_members_joined / p.minimum_members_required) * 100
+            : 0),
+        0,
+      ) / projs.length;
+    fillRateByBuilder.set(builderId, avg);
+  });
+
+  const enrichedBuilders = builders.map((b) => ({
+    ...b,
+    project_count: projectsByBuilder.get(b.id)?.length ?? 0,
+    avg_fill_rate_pct: fillRateByBuilder.get(b.id) ?? 0,
+  }));
 
   return (
     <div className="section-container">
-      <h1 className="text-2xl font-heading font-bold mb-2">Builder Management</h1>
-      <p className="text-cream-muted text-sm mb-8">
-        Builders are derived from active projects. Contact details and commission structure can be managed per project.
-      </p>
-
-      <div className="space-y-6">
-        {builders.map((b) => (
-          <div key={b.name} className="glass-card p-6 rounded-xl border border-border">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-              <h2 className="text-lg font-heading font-semibold text-foreground">{b.name}</h2>
-              <span className="text-sm text-cream-muted bg-surface-elevated px-3 py-1 rounded-full">
-                {b.projects?.length ?? 0} active project{b.projects?.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-            <p className="text-xs text-cream-muted mb-4">
-              Contact details, negotiated discount structure, and trust score can be added in a future phase.
-            </p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-cream-muted text-left">
-                    <th className="py-2 pr-4">Project</th>
-                    <th className="py-2 pr-4">Location</th>
-                    <th className="py-2 pr-4">Discount</th>
-                    <th className="py-2 pr-4">Pool</th>
-                    <th className="py-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {(b.projects ?? []).map((p) => (
-                    <tr key={p.id}>
-                      <td className="py-3 pr-4">
-                        <Link href={`/admin/projects/${p.id}`} className="text-gold hover:underline">
-                          {p.project_name}
-                        </Link>
-                      </td>
-                      <td className="py-3 pr-4 text-cream-muted">{p.location}</td>
-                      <td className="py-3 pr-4">{p.discount_percentage}%</td>
-                      <td className="py-3 pr-4">{p.current_members_joined} / {p.minimum_members_required}</td>
-                      <td className="py-3 capitalize">{p.status}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ))}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-heading font-bold">Builder Management</h1>
+          <p className="text-cream-muted text-sm mt-1">
+            Manage builder profiles, trust scores, and stats shown to members.
+          </p>
+        </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button className="gold-gradient-bg text-accent-foreground">
+              <Plus className="w-4 h-4 mr-1" /> New Builder
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-surface-elevated border-border">
+            <DialogHeader>
+              <DialogTitle>Create Builder</DialogTitle>
+            </DialogHeader>
+            <BuilderForm />
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {builders.length === 0 && (
+      {enrichedBuilders.length === 0 ? (
         <div className="text-center py-16 glass-card rounded-2xl border border-dashed border-border">
-          <p className="text-cream-muted">No builders yet. Create a project to see builders here.</p>
+          <p className="text-cream-muted">No builders yet.</p>
           <Link href="/admin/projects/new" className="inline-block mt-4 text-gold hover:underline">
             Create Project
           </Link>
         </div>
+      ) : (
+        <BuildersTable builders={enrichedBuilders} />
       )}
     </div>
   );

@@ -34,6 +34,7 @@ export default async function AdminLayout({
             <Link href="/admin/builders" className="text-cream-muted hover:text-gold">Builders</Link>
             <Link href="/admin/projects" className="text-cream-muted hover:text-gold">Projects</Link>
             <Link href="/admin/pools" className="text-cream-muted hover:text-gold">Pools</Link>
+            <Link href="/admin/finance" className="text-cream-muted hover:text-gold">Finance</Link>
             <Link href="/admin/contact-messages" className="text-cream-muted hover:text-gold">Contact</Link>
             <Link href="/dashboard" className="text-cream-muted hover:text-gold">Member View</Link>
           </nav>

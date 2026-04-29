@@ -1,11 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { approveMembershipRequest, rejectMembershipRequest, addAdminNote } from "@/app/actions/admin";
+import {
+  approveMembershipRequest,
+  rejectMembershipRequest,
+  updateMemberNotes,
+  addAdminNote,
+} from "@/app/actions/admin";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -22,27 +30,41 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { MembershipRequest, Profile } from "@/types/database";
-
-const BUDGET_OPTIONS = ["₹50L - ₹1Cr", "₹1Cr - ₹2Cr", "₹2Cr - ₹3Cr", "₹3Cr+"];
-const LOCATION_OPTIONS = ["Gachibowli", "Kokapet", "Narsingi", "Financial District", "Tellapur", "Kollur", "Other"];
-const PURPOSE_OPTIONS = ["Investment", "End Use", "Both"];
+import {
+  BUDGET_RANGES,
+  BUYING_PURPOSES,
+  HYDERABAD_LOCATIONS,
+} from "@/lib/constants";
 
 interface MembersTableProps {
   requests: MembershipRequest[];
-  profiles: Profile[];
+  profiles?: Profile[];
   searchParams?: { status?: string; budget?: string; location?: string; purpose?: string };
 }
 
-export function MembersTable({ requests, profiles, searchParams = {} }: MembersTableProps) {
+export function MembersTable({ requests, profiles = [], searchParams = {} }: MembersTableProps) {
   const router = useRouter();
-  const [noteUserId, setNoteUserId] = useState<string | null>(null);
-  const [noteText, setNoteText] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [quickNoteUserId, setQuickNoteUserId] = useState<string | null>(null);
+  const [quickNoteText, setQuickNoteText] = useState("");
+
+  const profileByPhone = (phone: string) =>
+    profiles.find((p) => p.phone === phone || (p.phone && phone.includes(p.phone)));
+
   const status = searchParams.status ?? "all";
   const budget = searchParams.budget ?? "";
   const location = searchParams.location ?? "";
   const purpose = searchParams.purpose ?? "";
 
-  const updateParams = (updates: { status?: string; budget?: string; location?: string; purpose?: string }) => {
+  const updateParams = (updates: {
+    status?: string;
+    budget?: string;
+    location?: string;
+    purpose?: string;
+  }) => {
     const next = {
       status: updates.status !== undefined ? updates.status : status,
       budget: updates.budget !== undefined ? updates.budget : budget,
@@ -57,7 +79,16 @@ export function MembersTable({ requests, profiles, searchParams = {} }: MembersT
     router.push(`/admin/members${p.toString() ? `?${p.toString()}` : ""}`);
   };
 
-  const filtered = requests;
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return requests;
+    return requests.filter(
+      (r) =>
+        r.full_name.toLowerCase().includes(q) ||
+        r.phone.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q),
+    );
+  }, [requests, search]);
 
   const handleApprove = async (requestId: string) => {
     const result = await approveMembershipRequest(requestId);
@@ -79,29 +110,42 @@ export function MembersTable({ requests, profiles, searchParams = {} }: MembersT
     }
   };
 
-  const handleAddNote = async (userId: string) => {
-    if (!noteText.trim()) return;
-    const result = await addAdminNote(userId, noteText.trim());
+  const handleSaveNotes = async (requestId: string) => {
+    setSavingId(requestId);
+    const result = await updateMemberNotes(requestId, noteDrafts[requestId] ?? "");
+    setSavingId(null);
     if (result.success) {
-      toast.success("Note added");
-      setNoteUserId(null);
-      setNoteText("");
+      toast.success("Notes saved");
       router.refresh();
     } else {
       toast.error(result.error);
     }
   };
 
-  const getProfileByPhone = (phone: string) =>
-    profiles.find((p) => p.phone === phone || (p.phone && phone.includes(p.phone)));
+  const toggleExpand = (r: MembershipRequest) => {
+    if (expandedId === r.id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(r.id);
+    setNoteDrafts((prev) => ({ ...prev, [r.id]: prev[r.id] ?? r.admin_notes ?? "" }));
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-4 items-center">
-        <span className="text-sm text-cream-muted">Status:</span>
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cream-muted" />
+          <Input
+            placeholder="Search name, phone, or email"
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
         <Select value={status} onValueChange={(v) => updateParams({ status: v })}>
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="All" />
+            <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
@@ -110,57 +154,64 @@ export function MembersTable({ requests, profiles, searchParams = {} }: MembersT
             <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
-        <span className="text-sm text-cream-muted ml-2">Budget:</span>
         <Select
           value={budget || "all"}
           onValueChange={(v) => updateParams({ budget: v === "all" ? "" : v })}
         >
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="All budgets" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            {BUDGET_OPTIONS.map((b) => (
-              <SelectItem key={b} value={b}>{b}</SelectItem>
+            <SelectItem value="all">All budgets</SelectItem>
+            {BUDGET_RANGES.map((b) => (
+              <SelectItem key={b} value={b}>
+                {b}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <span className="text-sm text-cream-muted">Location:</span>
         <Select
           value={location || "all"}
           onValueChange={(v) => updateParams({ location: v === "all" ? "" : v })}
         >
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All locations" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            {LOCATION_OPTIONS.map((loc) => (
-              <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+            <SelectItem value="all">All locations</SelectItem>
+            {HYDERABAD_LOCATIONS.map((loc) => (
+              <SelectItem key={loc} value={loc}>
+                {loc}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <span className="text-sm text-cream-muted">Purpose:</span>
-        <Select
-          value={purpose || "all"}
-          onValueChange={(v) => updateParams({ purpose: v === "all" ? "" : v })}
-        >
-          <SelectTrigger className="w-[130px]">
-            <SelectValue placeholder="All" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            {PURPOSE_OPTIONS.map((p) => (
-              <SelectItem key={p} value={p}>{p}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="inline-flex rounded-lg border border-border overflow-hidden">
+          <button
+            type="button"
+            onClick={() => updateParams({ purpose: "" })}
+            className={`px-3 py-1.5 text-xs ${purpose === "" ? "bg-gold/20 text-gold" : "text-cream-muted hover:text-foreground"}`}
+          >
+            All
+          </button>
+          {BUYING_PURPOSES.map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => updateParams({ purpose: p })}
+              className={`px-3 py-1.5 text-xs border-l border-border ${purpose === p ? "bg-gold/20 text-gold" : "text-cream-muted hover:text-foreground"}`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="border-border">
+              <TableHead className="w-8"></TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Email</TableHead>
@@ -172,57 +223,111 @@ export function MembersTable({ requests, profiles, searchParams = {} }: MembersT
           </TableHeader>
           <TableBody>
             {filtered.map((r) => {
-              const profile = getProfileByPhone(r.phone);
+              const isExpanded = expandedId === r.id;
               return (
-                <TableRow key={r.id} className="border-border">
-                  <TableCell className="font-medium">{r.full_name}</TableCell>
-                  <TableCell>{r.phone}</TableCell>
-                  <TableCell>{r.email}</TableCell>
-                  <TableCell>{r.budget_range ?? "—"}</TableCell>
-                  <TableCell>{r.buying_purpose ?? "—"}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        r.status === "approved"
-                          ? "default"
-                          : r.status === "rejected"
-                          ? "destructive"
-                          : "secondary"
-                      }
-                    >
-                      {r.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {r.status === "pending" && (
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          size="sm"
-                          className="gold-gradient-bg text-accent-foreground"
-                          onClick={() => handleApprove(r.id)}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleReject(r.id)}
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    )}
-                    {profile && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setNoteUserId(noteUserId === profile.id ? null : profile.id)}
+                <Fragment key={r.id}>
+                  <TableRow className="border-border">
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(r)}
+                        className="text-cream-muted hover:text-gold"
+                        aria-label={isExpanded ? "Collapse notes" : "Open notes"}
                       >
-                        Add note
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
+                        {isExpanded ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </button>
+                    </TableCell>
+                    <TableCell className="font-medium">{r.full_name}</TableCell>
+                    <TableCell>{r.phone}</TableCell>
+                    <TableCell>{r.email}</TableCell>
+                    <TableCell>{r.budget_range ?? "—"}</TableCell>
+                    <TableCell>{r.buying_purpose ?? "—"}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          r.status === "approved"
+                            ? "default"
+                            : r.status === "rejected"
+                              ? "destructive"
+                              : "secondary"
+                        }
+                      >
+                        {r.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end items-center">
+                        {r.status === "pending" && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="gold-gradient-bg text-accent-foreground"
+                              onClick={() => handleApprove(r.id)}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleReject(r.id)}
+                            >
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                        {(() => {
+                          const p = profileByPhone(r.phone);
+                          if (!p) return null;
+                          return (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setQuickNoteUserId(quickNoteUserId === p.id ? null : p.id);
+                                setQuickNoteText("");
+                              }}
+                            >
+                              Add note
+                            </Button>
+                          );
+                        })()}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {isExpanded && (
+                    <TableRow className="border-border bg-surface-elevated/30">
+                      <TableCell colSpan={8} className="py-4">
+                        <div className="space-y-2 max-w-3xl">
+                          <label className="text-[10px] text-cream-muted uppercase tracking-wider block">
+                            Admin Notes
+                          </label>
+                          <Textarea
+                            rows={3}
+                            value={noteDrafts[r.id] ?? ""}
+                            onChange={(e) =>
+                              setNoteDrafts((prev) => ({ ...prev, [r.id]: e.target.value }))
+                            }
+                            placeholder="Internal notes about this applicant (visible to admins only)."
+                          />
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              size="sm"
+                              onClick={() => handleSaveNotes(r.id)}
+                              disabled={savingId === r.id}
+                              className="gold-gradient-bg text-accent-foreground"
+                            >
+                              {savingId === r.id ? "Saving..." : "Save Notes"}
+                            </Button>
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
               );
             })}
           </TableBody>
@@ -230,22 +335,37 @@ export function MembersTable({ requests, profiles, searchParams = {} }: MembersT
       </div>
 
       {filtered.length === 0 && (
-        <p className="text-cream-muted text-center py-8">No membership requests match the filter.</p>
+        <p className="text-cream-muted text-center py-8">
+          No membership requests match the filter.
+        </p>
       )}
 
-      {noteUserId && (
+      {quickNoteUserId && (
         <div className="glass-card p-4 rounded-xl flex gap-2">
-          <input
-            type="text"
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
-            placeholder="Admin note..."
-            className="flex-1 px-3 py-2 rounded-lg bg-surface-elevated border border-border text-foreground"
+          <Input
+            value={quickNoteText}
+            onChange={(e) => setQuickNoteText(e.target.value)}
+            placeholder="Quick note (added to user history)..."
+            className="flex-1"
           />
-          <Button size="sm" onClick={() => handleAddNote(noteUserId)}>
+          <Button
+            size="sm"
+            onClick={async () => {
+              if (!quickNoteText.trim()) return;
+              const result = await addAdminNote(quickNoteUserId, quickNoteText.trim());
+              if (result.success) {
+                toast.success("Note added");
+                setQuickNoteUserId(null);
+                setQuickNoteText("");
+                router.refresh();
+              } else {
+                toast.error(result.error);
+              }
+            }}
+          >
             Save
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setNoteUserId(null)}>
+          <Button size="sm" variant="ghost" onClick={() => setQuickNoteUserId(null)}>
             Cancel
           </Button>
         </div>

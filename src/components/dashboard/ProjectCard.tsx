@@ -13,6 +13,7 @@ import { joinPool } from "@/app/actions/pool";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Project } from "@/types/database";
+import { JoinPoolDialog } from "@/components/projects/JoinPoolDialog";
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
@@ -29,11 +30,9 @@ export function ProjectCard({ project, isMember = false, isUnlocked }: ProjectCa
   const thumbnailUrl = project.thumbnail_url?.trim() || null;
   const discountedPrice = project.base_price * (1 - Number(project.discount_percentage) / 100);
 
-  const handleJoin = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleJoin = async () => {
     setJoining(true);
-    const result = await joinPool(project.id);
+    const result = await joinPool(project.id, { agreementAccepted: true });
     setJoining(false);
     if (result.success) {
       toast.success("You've joined this capital pool.");
@@ -109,14 +108,20 @@ export function ProjectCard({ project, isMember = false, isUnlocked }: ProjectCa
             <Link href={`/projects/${project.id}`}>View Details</Link>
           </Button>
         ) : (
-          <Button
-            onClick={handleJoin}
-            disabled={joining || project.status === "closed"}
-            className="w-full gold-gradient-bg text-accent-foreground hover:opacity-90"
-            size="sm"
-          >
-            {joining ? "Joining..." : "Join Capital Pool"}
-          </Button>
+          <JoinPoolDialog
+            isComingSoon={project.status === "coming_soon"}
+            loading={joining}
+            onConfirm={handleJoin}
+            trigger={
+              <Button
+                disabled={joining || project.status === "closed"}
+                className="w-full gold-gradient-bg text-accent-foreground hover:opacity-90"
+                size="sm"
+              >
+                {joining ? "Joining..." : "Join Capital Pool"}
+              </Button>
+            }
+          />
         )}
       </CardFooter>
     </Card>
